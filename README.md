@@ -586,7 +586,7 @@ sys	0m0.060s
 
 A simple bit-flip XOR encryption toggling the LSB of each character in the string passed to `argv`.
 
-```
+```python
 #!/usr/bin/python2
 
 #
