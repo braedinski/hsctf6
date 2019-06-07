@@ -1,21 +1,26 @@
 # HSCTF 6
 
-A bunch of write-ups for HSCTF 6 which I participated in this year. The write-ups are mostly for binary exploitation and reverse engineering. The first few web challenges were pretty easy so I didn't bother doing write-ups.
+A bunch of write-ups for HSCTF 6 which I participated in this year. The write-ups are mostly for binary exploitation and reverse engineering. The first few web challenges were pretty easy so I didn't bother explaining them.
+
+The CTF was okay, apart from the fact that the organisers kept pulling challenges left and right because of issues. One challenge `redtea` was pulled so many times it was basically a meme in the CTF's Discord channel. I think I wasted about 10 trying to exploit this unexploitable challenge. So I'm including the script I used to try and exploit the challenge at the bottom.
 
 ## Challenges
 
 |Challenge|Type|Points|Solves|
 |---------|----|------|------|
-|[English Sucks](#english-sucks)|misc|497pts|8|
+|[English Sucks](#english-sucks)|misc|497pts|11|
 |[bit](#bit)|pwn|401pts|76|
-|[caesars-revenge](#caesars-revenge)|pwn|...|...|
+|[caesars-revenge](#caesars-revenge)|pwn|431pts|53|
 |[combo-chain](#combo-chain)|pwn|368pts|102|
-|[combo-chain-lite](#combo-chain-lite)|pwn|...|...|
-|[storytime](#storytime)|pwn|...|...|
-|[return-to-sender](#return-to-sender)|pwn|...|...|
-|[byte](#byte)|pwn|...|...|
-|[md4](#md4)|web/crypto|...|...|
-|[a-byte](#a-byte)|reversal|...|...|
+|[combo-chain-lite](#combo-chain-lite)|pwn|245pts|216|
+|[storytime](#storytime)|pwn|334pts|...|
+|[return-to-sender](#return-to-sender)|pwn|170pts|322|
+|[byte](#byte)|pwn|431pts|53|
+|[md5--](#md5--)|web/crypto|233pts|...|
+|[a-byte](#a-byte)|reversal|180pts|...|
+|[redtea](#redtea)|stupid|-1pts|-1|
+
+
 
 # English Sucks
 
@@ -608,4 +613,75 @@ for x in xor:
     sys.stdout.write(chr(b))
 
 print ''
+```
+
+## redtea
+
+```python
+#!/usr/bin/python2
+
+from pwn import *
+
+import random
+import string
+
+def random_string(length):
+    letters = string.printable
+    return ''.join(random.choice(letters) for i in range(length))
+
+def twos_complement(val, nbits):
+    if val < 0:
+        val = (1 << nbits) + val
+    else:
+        if (val & (1 << (nbits - 1))) != 0:
+            val = val - (1 << nbits)
+    return val
+
+flag = 0x5682be80
+
+# ...
+while True:
+    write = random_string(3)
+
+    ebx = len(write) + 1
+    edi = ebx - 0x2
+    edx = 0
+    edi = flag + 0x80
+    eax = ord(write[1])
+    esi = ord(write[0])
+    eax -= 0x61
+    esi -= 0x61
+    tmp_eax = eax
+    esi *= 0x2a4
+    eax = tmp_eax * 0x1a
+    eax += esi
+    esi = ord(write[2])
+    eax = esi + eax - 0x61
+    write_address = edi + eax * 8
+
+    if str(hex(0x56851540)) == str(hex(write_address)):
+        log.info('str = {}'.format(write))
+        log.info('write = ' + hex(twos_complement(write_address, 32)))
+        break
+
+ecx = flag + 0x80
+
+# ...
+while True:
+    input = random_string(3)
+
+    eax = ord(input[1]) # R
+    edx = ord(input[0]) # Q
+    eax = eax - 0x61
+    edx = edx - 0x61
+    eax *= 0x1a     # 26
+    edx *= 0x2a4    # 696
+    eax += edx
+    edx = ord(input[2]) # S
+    eax = eax + edx - 0x61
+    eax = ecx + eax * 8
+
+    if str(hex(0x5682bf00)) == str(hex(eax)):
+        print '{} = {}'.format(input, hex(eax))
+        break
 ```
