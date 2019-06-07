@@ -2,7 +2,7 @@
 
 A bunch of write-ups for HSCTF 6 which I participated in this year. The write-ups are mostly for binary exploitation and reverse engineering. The first few web challenges were pretty easy so I didn't bother explaining them.
 
-The CTF was okay, apart from the fact that the organisers kept pulling challenges left and right because of issues. One challenge `redtea` was pulled so many times it was basically a meme in the CTF's Discord channel. I think I wasted about 10 trying to exploit this unexploitable challenge. So I'm including the script I used to try and exploit the challenge at the bottom.
+The CTF was okay, apart from the fact that the organisers kept pulling challenges left and right because of issues. One challenge `redtea` was pulled so many times it was basically a meme in the CTF's Discord channel. I think I wasted about 10 hours trying to exploit this challenge, so I'm including the script I used to try and exploit the challenge at the bottom.
 
 ## Challenges
 
