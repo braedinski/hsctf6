@@ -15,6 +15,7 @@ A bunch of write-ups for HSCTF 6 which I participated in this year. The write-up
 |[return-to-sender](#return-to-sender)|pwn|...|...|
 |[byte](#byte)|pwn|...|...|
 |[md4](#md4)|web/crypto|...|...|
+|[a-byte](#a-byte)|reversal|...|...|
 
 # English Sucks
 
@@ -579,4 +580,32 @@ $ time php brute.php
 real	1m23.593s
 user	1m22.902s
 sys	0m0.060s
+```
+
+## a-byte
+
+A simple bit-flip XOR encryption toggling the LSB of each character in the string passed to `argv`.
+
+```
+#!/usr/bin/python2
+
+#
+# $ python get.py
+# hsctf{w0w_y0u_kn0w_d4_wA3_8h2bA029}
+#
+
+from pwn import *
+import sys
+
+xor = [
+    105, 114, 98, 117, 103, 122, 118, 49, 118, 94, 120, 49, 116,
+    94, 106, 111, 49, 118, 94, 101, 53, 94, 118, 64, 50, 94, 57,
+    105, 51, 99, 64, 49, 51, 56, 124
+]
+
+for x in xor:
+    b = x ^ 1
+    sys.stdout.write(chr(b))
+
+print ''
 ```
