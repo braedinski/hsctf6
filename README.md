@@ -13,14 +13,14 @@ The CTF was okay, apart from the fact that the organisers kept pulling challenge
 |[caesars-revenge](#caesars-revenge)|pwn|431pts|53|
 |[combo-chain](#combo-chain)|pwn|368pts|102|
 |[combo-chain-lite](#combo-chain-lite)|pwn|245pts|216|
-|[storytime](#storytime)|pwn|334pts|...|
+|[storytime](#storytime)|pwn|334pts|130|
 |[return-to-sender](#return-to-sender)|pwn|170pts|322|
 |[byte](#byte)|pwn|431pts|53|
-|[md5--](#md5--)|web/crypto|233pts|...|
-|[a-byte](#a-byte)|reversal|180pts|...|
+|[md5--](#md5--)|web/crypto|233pts|230|
+|[a-byte](#a-byte)|reversal|180pts|304|
 |[redtea](#redtea)|stupid|-1pts|-1|
 
-
+I placed in 205th out of 1135 teams, welp.
 
 # English Sucks
 
