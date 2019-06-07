@@ -14,6 +14,7 @@ A bunch of write-ups for HSCTF 6 which I participated in this year. The write-up
 |[storytime](#storytime)|pwn|...|...|
 |[return-to-sender](#return-to-sender)|pwn|...|...|
 |[byte](#byte)|pwn|...|...|
+|[md4](#md4)|web/crypto|...|...|
 
 # English Sucks
 
@@ -524,4 +525,58 @@ p.sendline(nullify)
 
 p.recvuntil('flag: ')
 print p.recvall(timeout=1.0)
+```
+
+## md4
+
+The md4 challenge leverages PHP's (insane) type-juggling. We can bruteforce an md4 hash such that `juggle(x) == juggle(h(x))`.
+
+The vulnerable PHP script is as follows:
+
+```php
+<?php
+$flag = file_get_contents("/flag");
+
+if (!isset($_GET["md4"]))
+{
+    highlight_file(__FILE__);
+    die();
+}
+
+if ($_GET["md4"] == hash("md4", $_GET["md4"]))
+{
+    echo $flag;
+}
+else
+{
+    echo "bad";
+}
+?>
+```
+
+To bruteforce an input such that `x == h(x)` after PHP has performed type-juggling, we generate random strings beginning with the prefix `0e`. The script takes ~1 minute on my PC. The only constraint is that the resulting md4 hash must contain only numbers after its `0e` prefix.
+
+```php
+<?php
+
+while (true) {
+    $input = '0e' . rand() . rand();
+    $output = hash('md4', $input);
+
+    if ($input == $output) {
+        echo '[+] ' . $input . ' == ' . $output . PHP_EOL;
+        break;
+    }
+}
+```
+
+An example output of the `brute.php` script.
+
+```
+$ time php brute.php 
+[+] 0e17515034251260822394 == 00e10624499502429551542587415723
+
+real	1m23.593s
+user	1m22.902s
+sys	0m0.060s
 ```
