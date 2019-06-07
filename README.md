@@ -533,9 +533,9 @@ p.recvuntil('flag: ')
 print p.recvall(timeout=1.0)
 ```
 
-## md4
+## md5--
 
-The md4 challenge leverages PHP's (insane) type-juggling. We can bruteforce an md4 hash such that `juggle(x) == juggle(h(x))`.
+The md5-- challenge leverages PHP's (insane) type-juggling. We can bruteforce an md4 hash such that `juggle(x) == juggle(h(x))`.
 
 The vulnerable PHP script is as follows:
 
