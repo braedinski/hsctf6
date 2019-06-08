@@ -218,7 +218,7 @@ int main()
 
 ## caesars-revenge
 
-```
+```python
 #!/usr/bin/python2
 
 from pwn import *
