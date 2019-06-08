@@ -348,6 +348,8 @@ p.close()
 
 ## combo-chain-lite
 
+This challenge was a simple ROP-chain exploit.
+
 ```python
 #!/usr/bin/python2
 
@@ -386,7 +388,7 @@ p.close()
 
 ## bit
 
-We want to overwrite the global offset table entry for `exit` with the address of `flag`.
+We want to overwrite the global offset table entry for `exit` with the address of `flag`. If I can recall correctly, the challenge has a `flip` function which XORs the nth bit at the byte position specified. So basically we need to flip three bits in order to change the address in `exit`'s GOT entry to the address of `flag`. When the program exits, `flag` will be executed.
 
 ```
 >>> x/wx 0x804a01c
@@ -422,6 +424,8 @@ Well, at least you tried.
 ```
 
 ## storytime
+
+The exploit for storytime involves a ROP-chain. We leak `write` from `libc`, then calculate the offset to `system` and `"/bin/sh"` in libc.
 
 ```python
 #!/usr/bin/python2
@@ -487,6 +491,8 @@ p.close()
 ```
 
 ## return-to-sender
+
+A simple 32-bit buffer overflow exploit. We find the address of `flag` and redirect code execution into this function, ez pz.
 
 ```python
 #!/usr/bin/python2
